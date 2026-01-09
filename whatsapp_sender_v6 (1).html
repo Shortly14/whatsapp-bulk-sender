@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>مُرسِل واتساب — 180 رقم (قابل للاستكمال)</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; background:#fafafa; color:#111; }
+    .card { background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:20px; max-width: 1000px; margin:auto; box-shadow:0 4px 12px rgba(0,0,0,.05); }
+    h1 { margin-top:0; font-size: 22px; }
+    label { font-weight:600; display:block; margin: 16px 0 8px; }
+    textarea, input[type="number"], input[type="text"], select, input[type="file"], input[type="checkbox"] { width:100%; padding:12px; border:1px solid #d1d5db; border-radius:10px; font-size:14px; box-sizing:border-box; background:#fff; }
+    textarea { min-height: 140px; resize: vertical; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .row > div { flex:1; min-width: 220px; }
+    .btns { display:flex; gap:10px; margin-top:16px; flex-wrap: wrap; }
+    button { border:0; padding:12px 18px; border-radius:12px; font-weight:700; cursor:pointer; }
+    .start { background:#16a34a; color:#fff; }
+    .pause { background:#f59e0b; color:#fff; }
+    .resume { background:#3b82f6; color:#fff; }
+    .stop { background:#ef4444; color:#fff; }
+    .secondary { background:#e5e7eb; color:#111; }
+    .muted { color:#6b7280; font-size:13px; }
+    .log { background:#0b1020; color:#c7d2fe; font-family: ui-monospace, Menlo, Consolas, monospace; padding:12px; border-radius:10px; height:190px; overflow:auto; }
+    .badge { display:inline-block; background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; padding:2px 8px; border-radius:999px; font-size:12px; }
+    .stats { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .footer { margin-top: 10px; font-size: 12px; color:#555; }
+    .tip { background:#f0fdf4; border:1px dashed #86efac; padding:10px; border-radius:12px; }
+    .inline { display:inline-flex; align-items:center; gap:8px; }
+    .checkbox { display:flex; gap:8px; align-items:center; margin-top:8px; }
+    .warn { background:#fff7ed; border:1px solid #fdba74; color:#7c2d12; padding:10px; border-radius:12px; }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2ff; border:1px solid #c7d2fe; color:#3730a3; font-size:12px; margin-left:6px; }
+    .small { font-size:12px; color:#555; }
+    kbd { padding:2px 6px; border:1px solid #ccc; border-bottom-width:2px; border-radius:6px; background:#f9f9f9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>مُرسِل واتساب — حتى 180 رقم (فتح روابط متتالية)</h1>
+    <p class="muted">
+      يفتح محادثة لكل رقم مع نص مُعبّأ. لتجاوز حالات تجاهل النص، يتم نسخ الرسالة تلقائيًا؛ إذا فُتح بدون نص: ألصق <kbd>Ctrl/⌘+V</kbd> واضغط Enter.
+    </p>
+
+    <div class="row">
+      <div>
+        <label>نمط الرابط:</label>
+        <select id="mode">
+          <option value="auto" selected>تلقائي (موصى به)</option>
+          <option value="web">web.whatsapp.com/send</option>
+          <option value="api">api.whatsapp.com/send</option>
+          <option value="wa">wa.me</option>
+        </select>
+      </div>
+      <div class="checkbox">
+        <input id="singleTab" type="checkbox" checked/>
+        <label for="singleTab">استخدام تبويب واحد فقط</label>
+      </div>
+      <div class="checkbox">
+        <input id="forceClipboard" type="checkbox" checked/>
+        <label for="forceClipboard">نسخ الرسالة تلقائيًا قبل فتح كل رقم</label>
+      </div>
+      <div class="checkbox">
+        <input id="shuffle" type="checkbox"/>
+        <label for="shuffle">ترتيب عشوائي للأرقام (اختياري)</label>
+      </div>
+    </div>
+
+    <label>الأرقام (يدعم فاصلة/سطر/مسافة):</label>
+    <textarea id="numbers" placeholder="لصق 180 رقم هنا..."></textarea>
+    <div class="row">
+      <div>
+        <label>أو ارفع CSV:</label>
+        <input id="csvFile" type="file" accept=".csv,text/csv"/>
+        <div class="small">نستخرج كل ما يشبه رقمًا تلقائيًا.</div>
+      </div>
+      <div>
+        <label>الفاصل الزمني (ثواني):</label>
+        <input id="delay" type="number" min="5" step="1" value="10"/>
+      </div>
+      <div>
+        <label>بدء من رقم:</label>
+        <input id="startIndex" type="number" min="1" step="1" value="1"/>
+      </div>
+    </div>
+
+    <label>الرسالة:</label>
+    <textarea id="message" placeholder="اكتب رسالتك هنا"></textarea>
+
+    <div class="warn" id="lengthWarn" style="display:none">
+      الرسالة طويلة جدًا وقد يتجاهل واتساب تمريرها. سيتم الاعتماد على النسخ التلقائي كحل بديل.
+    </div>
+
+    <div class="btns">
+      <button class="start" id="startBtn">بدء</button>
+      <button class="pause" id="pauseBtn" disabled>إيقاف مؤقت</button>
+      <button class="resume" id="resumeBtn" disabled>استئناف</button>
+      <button class="stop" id="stopBtn" disabled>إيقاف</button>
+      <button class="secondary" id="previewBtn">معاينة أول رقم</button>
+      <button class="secondary" id="clearBtn">مسح</button>
+    </div>
+
+    <div class="stats">
+      <span>المعالجة: <span class="badge" id="progress">0 / 0</span></span>
+      <span>الحالة: <span class="badge" id="status">جاهز</span></span>
+      <span class="pill" id="countBadge">0 رقم</span>
+      <span class="pill" id="resumeInfo" style="display:none"></span>
+    </div>
+
+    <label>السجل:</label>
+    <div class="log" id="log"></div>
+
+    <div class="tip">
+      <strong>تلميحات:</strong>
+      <ul>
+        <li>عطّل مانع النوافذ المنبثقة.</li>
+        <li>ادخل على <strong>web.whatsapp.com</strong> مسبقًا.</li>
+        <li>يمكنك الإيقاف المؤقت ثم الاستئناف لاحقًا — وسيتم حفظ موضعك تلقائيًا.</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      فتح الروابط فقط — الإرسال يدويًا. لا يتم حفظ الأرقام.
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const modeEl = $('mode');
+    const singleTabEl = $('singleTab');
+    const forceClipboardEl = $('forceClipboard');
+    const shuffleEl = $('shuffle');
+    const numbersEl = $('numbers');
+    const csvFileEl = $('csvFile');
+    const messageEl = $('message');
+    const delayEl = $('delay');
+    const startIndexEl = $('startIndex');
+    const logEl = $('log');
+    const progressEl = $('progress');
+    const statusEl = $('status');
+    const startBtn = $('startBtn');
+    const pauseBtn = $('pauseBtn');
+    const resumeBtn = $('resumeBtn');
+    const stopBtn = $('stopBtn');
+    const clearBtn = $('clearBtn');
+    const previewBtn = $('previewBtn');
+    const lengthWarn = $('lengthWarn');
+    const countBadge = $('countBadge');
+    const resumeInfo = $('resumeInfo');
+
+    let stopFlag = false;
+    let pauseFlag = false;
+    let idx = 0;
+    let list = [];
+    let tabRef = null;
+    let timer = null;
+    const LS_KEY = 'wa_sender_state_v6';
+
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile/i.test(navigator.userAgent);
+    }
+
+    function chosenMode() {
+      const sel = modeEl.value;
+      if (sel !== 'auto') return sel;
+      return isMobile() ? 'api' : 'web';
+    }
+
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `[${time}] ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function countUpdate(n) {
+      countBadge.textContent = n + ' رقم';
+    }
+
+    function extractNumbers(text) {
+      const tokens = text.split(/[\s,;]+/).map(s => s.trim()).filter(Boolean);
+      const set = new Set();
+      const cleaned = [];
+      for (const t of tokens) {
+        const onlyDigits = t.replace(/\D/g, '');
+        if (onlyDigits && onlyDigits.length >= 8 && !set.has(onlyDigits)) {
+          set.add(onlyDigits);
+          cleaned.push(onlyDigits);
+        }
+      }
+      return cleaned;
+    }
+
+    function parseNumbers() {
+      const raw = numbersEl.value || '';
+      return extractNumbers(raw);
+    }
+
+    numbersEl.addEventListener('input', () => {
+      const arr = parseNumbers();
+      countUpdate(arr.length);
+      saveState({numbers: numbersEl.value});
+    });
+
+    csvFileEl.addEventListener('change', () => {
+      const file = csvFileEl.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = reader.result || '';
+        const arr = extractNumbers(text.toString());
+        if (arr.length === 0) { alert('لم يتم العثور على أرقام داخل الملف.'); return; }
+        const existing = parseNumbers();
+        const merged = Array.from(new Set([...existing, ...arr]));
+        numbersEl.value = merged.join('\n');
+        countUpdate(merged.length);
+        log('تم استيراد ' + arr.length + ' رقمًا من CSV.');
+        saveState({numbers: numbersEl.value});
+      };
+      reader.readAsText(file);
+    });
+
+    function updateProgress(current, total) {
+      progressEl.textContent = `${current} / ${total}`;
+    }
+
+    function normalizeText(msg) {
+      return msg.replace(/\r\n/g, '\n').replace(/\u200f|\u200e/g, '');
+    }
+
+    function buildLink(num, msg, mode) {
+      const enc = encodeURIComponent(normalizeText(msg));
+      if (mode === 'web') {
+        return `https://web.whatsapp.com/send?phone=${num}&text=${enc}`;
+      } else if (mode === 'api') {
+        return `https://api.whatsapp.com/send?phone=${num}&text=${enc}`;
+      } else {
+        return `https://wa.me/${num}?text=${enc}`;
+      }
+    }
+
+    function disableInputs(disabled) {
+      numbersEl.disabled = disabled;
+      messageEl.disabled = disabled;
+      delayEl.disabled = disabled;
+      startIndexEl.disabled = disabled;
+      modeEl.disabled = disabled;
+      singleTabEl.disabled = disabled;
+      forceClipboardEl.disabled = disabled;
+      shuffleEl.disabled = disabled;
+      startBtn.disabled = disabled;
+      pauseBtn.disabled = !disabled;
+      stopBtn.disabled = !disabled;
+      resumeBtn.disabled = true;
+      previewBtn.disabled = disabled;
+      clearBtn.disabled = disabled;
+      csvFileEl.disabled = disabled;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        log('تم نسخ الرسالة للحافظة.');
+      } catch (e) {
+        log('تعذر النسخ تلقائيًا. قد تحتاج لنسخها يدويًا.');
+      }
+    }
+
+    async function openLink(url) {
+      if (singleTabEl.checked) {
+        if (!tabRef || tabRef.closed) {
+          tabRef = window.open(url, '_blank');
+        } else {
+          tabRef.location.href = url;
+        }
+      } else {
+        window.open(url, '_blank');
+      }
+    }
+
+    function checkLength(msg) {
+      const over = msg.length > 1500;
+      lengthWarn.style.display = over ? 'block' : 'none';
+      return over;
+    }
+
+    function shuffleArray(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function saveState(partial = {}) {
+      const prev = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      const state = {
+        numbers: numbersEl.value,
+        message: messageEl.value,
+        mode: modeEl.value,
+        singleTab: singleTabEl.checked,
+        forceClipboard: forceClipboardEl.checked,
+        shuffle: shuffleEl.checked,
+        delay: delayEl.value,
+        startIndex: startIndexEl.value,
+        idx,
+        list,
+        ...prev,
+        ...partial
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+      updateResumeInfo();
+    }
+
+    function loadState() {
+      try {
+        const state = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        if (!state) return;
+        if (state.numbers) numbersEl.value = state.numbers;
+        if (state.message) messageEl.value = state.message;
+        if (state.mode) modeEl.value = state.mode;
+        if (typeof state.singleTab === 'boolean') singleTabEl.checked = state.singleTab;
+        if (typeof state.forceClipboard === 'boolean') forceClipboardEl.checked = state.forceClipboard;
+        if (typeof state.shuffle === 'boolean') shuffleEl.checked = state.shuffle;
+        if (state.delay) delayEl.value = state.delay;
+        if (state.startIndex) startIndexEl.value = state.startIndex;
+        if (Array.isArray(state.list)) list = state.list;
+        if (typeof state.idx === 'number') idx = state.idx;
+        countUpdate(parseNumbers().length);
+        updateResumeInfo();
+      } catch {}
+    }
+
+    function updateResumeInfo() {
+      const state = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      if (Array.isArray(state.list) && state.list.length > 0 && typeof state.idx === 'number') {
+        resumeInfo.style.display = 'inline-block';
+        resumeInfo.textContent = 'استكمال من: ' + (state.idx + 1) + ' / ' + state.list.length;
+        resumeBtn.disabled = false;
+      } else {
+        resumeInfo.style.display = 'none';
+        resumeBtn.disabled = true;
+      }
+    }
+
+    previewBtn.addEventListener('click', async () => {
+      const arr = parseNumbers();
+      if (arr.length === 0) { alert('أضف رقمًا واحدًا على الأقل.'); return; }
+      const num = arr[0];
+      const msg = messageEl.value || '';
+      if (!msg) { alert('اكتب الرسالة أولاً.'); return; }
+      const mode = chosenMode();
+      checkLength(msg);
+      if (forceClipboardEl.checked) await copyToClipboard(msg);
+      const url = buildLink(num, msg, mode);
+      openLink(url);
+      log(`معاينة (${mode}) للرقم: ${num}`);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      numbersEl.value = '';
+      messageEl.value = '';
+      countUpdate(0);
+      log('تم مسح المحتوى.');
+      updateProgress(0, 0);
+      statusEl.textContent = 'جاهز';
+      localStorage.removeItem(LS_KEY);
+      updateResumeInfo();
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      pauseFlag = true;
+      statusEl.textContent = 'إيقاف مؤقت...';
+      log('تم الإيقاف المؤقت عند: ' + (idx + 1));
+      resumeBtn.disabled = false;
+      pauseBtn.disabled = true;
+      if (timer) clearTimeout(timer);
+      saveState({ idx, list });
+    });
+
+    resumeBtn.addEventListener('click', () => {
+      const state = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+      if (Array.isArray(state.list) && typeof state.idx === 'number') {
+        list = state.list;
+        idx = state.idx;
+        pauseFlag = false;
+        statusEl.textContent = 'استئناف...';
+        resumeBtn.disabled = true;
+        pauseBtn.disabled = false;
+        disableInputs(true);
+        continueLoop();
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      stopFlag = true;
+      statusEl.textContent = 'سيتم الإيقاف بعد الرقم الحالي...';
+      log('طلب إيقاف العملية.');
+      if (timer) clearTimeout(timer);
+      saveState({ idx, list });
+    });
+
+    function continueLoop() {
+      if (stopFlag || pauseFlag || idx >= list.length) {
+        finalize();
+        return;
+      }
+      const mode = chosenMode();
+      const msg = messageEl.value || '';
+      const num = list[idx];
+      (async () => {
+        if (forceClipboardEl.checked) await copyToClipboard(msg);
+        const url = buildLink(num, msg, mode);
+        await openLink(url);
+        updateProgress(idx + 1, list.length);
+        log(`فتح (${mode}) للرقم: ${num}`);
+        saveState({ idx, list });
+        idx++;
+        timer = setTimeout(continueLoop, Math.max(5, parseInt(delayEl.value, 10) || 10) * 1000);
+      })();
+    }
+
+    startBtn.addEventListener('click', () => {
+      list = parseNumbers();
+      if (list.length === 0) { alert('أضف رقمًا واحدًا على الأقل.'); return; }
+      if (shuffleEl.checked) list = shuffleArray(list);
+      const msg = messageEl.value || '';
+      if (!msg) { alert('اكتب الرسالة أولاً.'); return; }
+      const delay = Math.max(5, parseInt(delayEl.value, 10) || 10);
+      let startAt = parseInt(startIndexEl.value, 10);
+      if (isNaN(startAt) || startAt < 1) startAt = 1;
+
+      checkLength(msg);
+
+      idx = startAt - 1;
+      stopFlag = false;
+      pauseFlag = false;
+      disableInputs(true);
+      statusEl.textContent = 'جارٍ فتح الروابط...';
+      updateProgress(idx, list.length);
+      log('بدأت العملية. الأرقام الكلية: ' + list.length + '، التأخير: ' + delay + ' ثانية.');
+      saveState({ idx, list });
+
+      continueLoop();
+    });
+
+    function finalize() {
+      if (stopFlag) {
+        log('تم الإيقاف عند الفهرس: ' + (idx + 1));
+        statusEl.textContent = 'مُتوقّف';
+      } else if (pauseFlag) {
+        log('الإرسال متوقف مؤقتًا عند: ' + (idx + 1));
+        statusEl.textContent = 'مُتوقّف مؤقتًا';
+      } else {
+        log('انتهت العملية لجميع الأرقام.');
+        statusEl.textContent = 'انتهى';
+        localStorage.removeItem(LS_KEY);
+      }
+      disableInputs(false);
+      resumeBtn.disabled = !pauseFlag;
+      pauseBtn.disabled = true;
+      stopBtn.disabled = true;
+    }
+
+    // تحميل الحالة السابقة
+    loadState();
+
+    // رسالة افتراضية + الملاحظة
+    if (!messageEl.value) {
+      messageEl.value = `السلام عليكم ورحمة الله وبركاته،
+مرحبا طلاب وطالبات البرنامج الصيفي، نرجو منكم تعبئة الاستبيان التالي:
+https://docs.google.com/forms/d/e/1FAIpQLSfBlHmfbGbyAZbUFE33i2PcYYRNU1D38Jr3E6w4YvBtDMs_EA/viewform?usp=dialog
+علما أن آخر وقت للمشاركة هو الخميس الساعة ٨ صباحا.
+
+ملاحظة: ارجو تسجيل رقم الهاتف من اجل ظهور الرابط.
+
+دمتم بخير 🌷`;
+    }
+  </script>
+</body>
+</html>
